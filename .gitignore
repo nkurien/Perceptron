@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+perceptronenv/
+
+# Data files (if you don't want to include them in the repo)
+data/
+
+# macOS
+.DS_Store
