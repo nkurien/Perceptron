@@ -1,5 +1,21 @@
 import numpy as np
 
+def load_mnist(path, kind='train'):
+    """Load MNIST data from path"""
+    labels_path = f"{path}/{kind}-labels-idx1-ubyte/{kind}-labels-idx1-ubyte"
+    images_path = f"{path}/{kind}-images-idx3-ubyte/{kind}-images-idx3-ubyte"
+    
+    print(f"Labels path: {labels_path}")
+    print(f"Images path: {images_path}")
+
+    with open(labels_path, 'rb') as lbpath:
+        labels = np.frombuffer(lbpath.read(), dtype=np.uint8, offset=8)
+    
+    with open(images_path, 'rb') as imgpath:
+        images = np.frombuffer(imgpath.read(), dtype=np.uint8, offset=16).reshape(len(labels), 784)
+    
+    return images, labels
+
 def shuffle_data(X, y, seed=None):
     """
     Shuffles the data samples along with their corresponding labels.
