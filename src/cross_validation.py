@@ -1,4 +1,6 @@
 import numpy as np
+from mlp import MLP
+
 
 def split_data(X, y, n_splits):
     """
@@ -32,37 +34,53 @@ def cross_validate(model_class, X, y, n_splits=5, **model_params):
     Perform cross-validation on a given model.
     
     Parameters:
-    model_class: Class of the model to be validated
-    X: Features (should be a 2D numpy array)
-    y: Labels (should be a 1D numpy array)
+    model_class: Class of the model to be validated (e.g., MLP, Perceptron)
+    X: Features (numpy array of shape [samples, features])
+    y: Labels (numpy array of shape [samples,])
     n_splits: Number of splits for cross-validation
     **model_params: Parameters to initialize the model
     
     Returns:
     list of scores from each fold
     """
-    folds = split_data(X, y, n_splits)
+    indices = np.arange(X.shape[0])
+    np.random.shuffle(indices)
+    fold_size = len(X) // n_splits
     scores = []
-    
-    for fold, (train_index, val_index) in enumerate(folds, 1):
-        print(f"Fold {fold}/{n_splits}")
+
+    for i in range(n_splits):
+        start = i * fold_size
+        end = len(X) if i == n_splits - 1 else (i + 1) * fold_size
+        val_indices = indices[start:end]
+        train_indices = np.concatenate([indices[:start], indices[end:]])
+
+        X_train, X_val = X[train_indices], X[val_indices]
+        y_train, y_val = y[train_indices], y[val_indices]
+
+        # Initialize model
+        model = model_class(input_size=X.shape[1], num_classes=np.unique(y).size, **model_params)
         
-        X_train, X_val = X[train_index], X[val_index]
-        y_train, y_val = y[train_index], y[val_index]
+        # Special handling for MLP one-hot encoding
         
-        # Initialize a new model for each fold
-        model = model_class(**model_params)
-        
-        # Train the model
-        model.train(X_train, y_train)
-        
+        if model_class.__name__ == 'MLP':
+            y_train_encoded = np.eye(np.unique(y).size)[y_train]
+            y_val_encoded = np.eye(np.unique(y).size)[y_val]
+            model.train(X_train.T, y_train_encoded.T, X_val.T, y_val_encoded.T, epochs=200)
+        else:
+            model.train(X_train, y_train)
+
         # Evaluate the model
-        predictions = model.predict(X_val)
-        score = np.mean(predictions == y_val)
-        scores.append(score)
-        
-        print(f"Fold {fold} score: {score:.4f}")
-    
+        if model_class.__name__ == 'MLP':
+            predictions = model.predict(X_val.T)
+            # For MLP, we need to compare against the original labels
+            val_accuracy = np.mean(predictions == np.argmax(y_val_encoded, axis=1))
+        else:
+            predictions = model.predict(X_val)
+            val_accuracy = np.mean(predictions == y_val)
+
+        scores.append(val_accuracy)
+        print(f"Fold {i + 1}/{n_splits}, Validation Accuracy: {val_accuracy:.4f}")
+
     return scores
 
 def print_cv_results(scores):
@@ -72,10 +90,8 @@ def print_cv_results(scores):
     Parameters:
     scores: List of scores from cross-validation
     """
-     # Convert numpy floats to Python floats
     scores = [float(score) for score in scores]
-    
     print("\nCross-validation results:")
-    print(f"Scores: {(scores)}")
+    print(f"Scores: {scores}")
     print(f"Mean score: {np.mean(scores):.4f}")
     print(f"Standard deviation: {np.std(scores):.4f}")

@@ -1,9 +1,10 @@
 import numpy as np
 
 class MLP:
-    def __init__(self, layer_sizes):
+    def __init__(self, input_size, num_classes, hidden_layers=[128, 64]):
+        layer_sizes = [input_size] + hidden_layers + [num_classes]
         self.layer_sizes = layer_sizes
-        self.weights = [np.random.randn(y, x) * 0.01 for x, y in zip(layer_sizes[:-1], layer_sizes[1:])]
+        self.weights = [np.random.randn(y, x) * np.sqrt(2.0/x) for x, y in zip(layer_sizes[:-1], layer_sizes[1:])]
         self.biases = [np.zeros((y, 1)) for y in layer_sizes[1:]]
 
     def sigmoid(self, z):
@@ -49,6 +50,7 @@ class MLP:
                 self.forward(X_batch)
                 nabla_b, nabla_w = self.backward(X_batch, y_batch)
                 
+                #possibly redundant control flow
                 # Update with L2 regularization
                 self.weights = [(1 - learning_rate * lambda_reg / n) * w - learning_rate * nw 
                                 for w, nw in zip(self.weights, nabla_w)]
