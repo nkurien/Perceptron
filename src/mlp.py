@@ -8,10 +8,23 @@ class MLP:
         self.biases = [np.zeros((y, 1)) for y in layer_sizes[1:]]
 
     def sigmoid(self, z):
-        return 1 / (1 + np.exp(-z))
+        """
+        Numerically stable sigmoid function.
+        """
+        # Clip the input to avoid overflow in exp
+        z = np.clip(z, -709, 709)  # exp(-709) is close to the smallest positive float
+        
+        # Use logaddexp for numerical stability
+        return np.where(z >= 0, 
+                        1 / (1 + np.exp(-z)), 
+                        np.exp(z) / (1 + np.exp(z)))
 
     def sigmoid_derivative(self, z):
-        return self.sigmoid(z) * (1 - self.sigmoid(z))
+        """
+        Derivative of the sigmoid function.
+        """
+        s = self.sigmoid(z)
+        return s * (1 - s)
 
     def forward(self, X):
         self.activations = [X]
@@ -36,7 +49,7 @@ class MLP:
             nabla_w[-l] = np.dot(delta, self.activations[-l-1].T)
         return nabla_b, nabla_w
 
-    def train(self, X_train, y_train, X_val, y_val, epochs=200, learning_rate=0.01, batch_size=32, lambda_reg=0.01):
+    def train(self, X_train, y_train, X_val, y_val, epochs=100, learning_rate=0.01, batch_size=32, lambda_reg=0.01, verbose=True):
         n = X_train.shape[1]
         for epoch in range(epochs):
             permutation = np.random.permutation(n)
@@ -57,11 +70,12 @@ class MLP:
                 self.biases = [b - learning_rate * nb for b, nb in zip(self.biases, nabla_b)]
             
             train_accuracy = self.evaluate(X_train, y_train)
-            if X_val is not None and y_val is not None:
-                val_accuracy = self.evaluate(X_val, y_val)
-                print(f"Epoch {epoch+1}/{epochs}, Training Accuracy: {train_accuracy:.4f}, Validation Accuracy: {val_accuracy:.4f}")
-            else:
-                print(f"Epoch {epoch+1}/{epochs}, Training Accuracy: {train_accuracy:.4f}")
+            if verbose and (epoch + 1) % 10 == 0:
+                if X_val is not None and y_val is not None:
+                    val_accuracy = self.evaluate(X_val, y_val)
+                    print(f"Epoch {epoch+1}/{epochs}, Training Accuracy: {train_accuracy:.4f}, Validation Accuracy: {val_accuracy:.4f}")
+                else:
+                    print(f"Epoch {epoch+1}/{epochs}, Training Accuracy: {train_accuracy:.4f}")
 
     def predict(self, X):
         # Forward pass

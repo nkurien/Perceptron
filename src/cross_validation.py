@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from mlp import MLP
 
 
@@ -65,7 +66,7 @@ def cross_validate(model_class, X, y, n_splits=5, **model_params):
         if model_class.__name__ == 'MLP':
             y_train_encoded = np.eye(np.unique(y).size)[y_train]
             y_val_encoded = np.eye(np.unique(y).size)[y_val]
-            model.train(X_train.T, y_train_encoded.T, X_val.T, y_val_encoded.T, epochs=200)
+            model.train(X_train.T, y_train_encoded.T, X_val.T, y_val_encoded.T, epochs=50, verbose=True)
         else:
             model.train(X_train, y_train)
 
@@ -95,3 +96,20 @@ def print_cv_results(scores):
     print(f"Scores: {scores}")
     print(f"Mean score: {np.mean(scores):.4f}")
     print(f"Standard deviation: {np.std(scores):.4f}")
+
+def summarize_cv_results(scores):
+    mean_score = np.mean(scores)
+    std_score = np.std(scores)
+    min_score = np.min(scores)
+    max_score = np.max(scores)
+    
+    print("\nCross-validation summary:")
+    print(f"Mean accuracy: {mean_score:.4f} ± {std_score:.4f}")
+    print(f"Min accuracy: {min_score:.4f}")
+    print(f"Max accuracy: {max_score:.4f}")
+    
+    plt.figure(figsize=(10, 6))
+    plt.boxplot(scores)
+    plt.title("Cross-validation Results")
+    plt.ylabel("Accuracy")
+    plt.show()
