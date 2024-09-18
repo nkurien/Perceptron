@@ -79,11 +79,20 @@ class DrawNumber:
         
         # Load the trained weights
         try:
-            with np.load('model_weights.npz') as data:
-                model.weights = [data[f'arr_{i}'] for i in range(len(data.files))]
-            print("Loaded trained weights successfully.")
+            # First, try to load the primary weights file
+            try:
+                with np.load('model_weights.npz') as data:
+                    model.weights = [data[f'arr_{i}'] for i in range(len(data.files))]
+                print("Loaded trained weights successfully from 'model_weights.npz'.")
+            except FileNotFoundError:
+                # If primary file is not found, try loading the backup file
+                with np.load('model_backup.npz') as data:
+                    model.weights = [data[f'arr_{i}'] for i in range(len(data.files))]
+                print("Loaded trained weights successfully from 'model_backup.npz'.")
         except FileNotFoundError:
-            print("Trained weights file not found. Using random weights.")
+            print("Neither 'model_weights.npz' nor 'model_backup.npz' found. Using random weights.")
+        except Exception as e:
+            print(f"An error occurred while loading weights: {str(e)}. Using random weights.")
         
         return model
 
