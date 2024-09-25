@@ -9,3 +9,6 @@ perceptronenv/
 
 # macOS
 .DS_Store
+
+#pycharm
+.idea
